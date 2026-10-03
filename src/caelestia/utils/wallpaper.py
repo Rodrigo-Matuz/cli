@@ -22,7 +22,7 @@ from caelestia.utils.paths import (
     wallpapers_cache_dir,
 )
 from caelestia.utils.scheme import Scheme, get_scheme
-from caelestia.utils.theme import apply_colours
+
 
 
 def is_valid_image(path: Path) -> bool:
@@ -98,9 +98,18 @@ def get_smart_opts(wall: Path, cache: Path) -> dict:
     return opts
 
 
-def get_colours_for_wall(wall: Path | str, no_smart: bool) -> None:
+def get_colours_for_wall(wall: Path | str, no_smart: bool) -> dict:
     wall = Path(wall)
     scheme = get_scheme()
+    if scheme.name != "dynamic":
+        return {
+            "name": scheme.name,
+            "flavour": scheme.flavour,
+            "mode": scheme.mode,
+            "variant": scheme.variant,
+            "colours": scheme.colours,
+        }
+
     cache = wallpapers_cache_dir / compute_hash(wall)
 
     if wall.suffix.lower() == ".gif":
@@ -174,15 +183,8 @@ def set_wallpaper(wall: Path, no_smart: bool) -> None:
 
     scheme = get_scheme()
 
-    # Change mode and variant based on wallpaper colour
-    if scheme.name == "dynamic" and not no_smart:
-        smart_opts = get_smart_opts(wall_cache, cache)
-        scheme.mode = smart_opts["mode"]
-        scheme.variant = smart_opts["variant"]
-
-    # Update colours
-    scheme.update_colours()
-    apply_colours(scheme.colours, scheme.mode)
+    # Wallpaper selection only updates wallpaper state. Theme changes must be
+    # explicit (`caelestia scheme set`), even when the dynamic scheme is active.
 
     # Run custom post-hook if configured
     cfg = get_config().get("wallpaper", {})

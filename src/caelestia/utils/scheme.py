@@ -17,8 +17,8 @@ class Scheme:
 
     def __init__(self, scheme_json: dict[str, Any] | None) -> None:
         if scheme_json is None:
-            self._name = "catppuccin"
-            self._flavour = "mocha"
+            self._name = "matuz"
+            self._flavour = "default"
             self._mode = "dark"
             self._variant = "tonalspot"
             self._colours = read_colours_from_file(self.get_colours_path())

@@ -183,6 +183,22 @@ Custom user templates can be defined in `~/.config/caelestia/templates/`.
 
 Output files are written to `~/.local/state/caelestia/theme/`. You can symlink them to your desired locations.
 
+### Fixed Matuz palette
+
+This fork defaults to `matuz/default/dark` on a new install. Existing installations retain their
+selected scheme in `~/.local/state/caelestia/scheme.json`; select the new palette once with:
+
+```sh
+caelestia scheme set --name matuz --flavour default --mode dark
+```
+
+Its accents are red `FC1A70`, purple `702EF3`, blue `1E65FF`, orange `FF4D00`, yellow `FFFF87`,
+and green `A4E400`, over neutral dark surfaces. Changing the wallpaper updates the wallpaper and
+thumbnail but **does not change, regenerate, or reapply the current colour scheme** (including when
+`dynamic` is selected). Change the scheme explicitly with `caelestia scheme set`; the wallpaper
+post-hook still runs. When a static scheme is selected, `caelestia wallpaper --print` reports that
+scheme's colours rather than a wallpaper-derived preview.
+
 ## Configuring
 
 All configuration options are in `~/.config/caelestia/cli.json`.
