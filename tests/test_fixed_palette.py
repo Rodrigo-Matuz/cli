@@ -21,6 +21,10 @@ from caelestia.utils import paths, scheme as scheme_module
 
 
 class FixedPaletteTest(unittest.TestCase):
+    def test_standalone_cli_with_shell_uses_shell_fork(self):
+        flake = (Path(__file__).resolve().parents[1] / "flake.nix").read_text()
+        self.assertIn('url = "github:Rodrigo-Matuz/shell";', flake)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

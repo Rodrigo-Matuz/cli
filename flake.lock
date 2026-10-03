@@ -10,15 +10,15 @@
         "quickshell": "quickshell"
       },
       "locked": {
-        "lastModified": 1790479591,
-        "narHash": "sha256-rYgmGwVz14bV7aK+nawtAj2mGkLRBmVYyLCIrWsU7fc=",
-        "owner": "caelestia-dots",
+        "lastModified": 1791029988,
+        "narHash": "sha256-GouXwuFhwqcHsWT6eaO+toT/D9CAYXKAUOv3bPQV1dk=",
+        "owner": "Rodrigo-Matuz",
         "repo": "shell",
-        "rev": "454f46da16ae75cc57f34adf48dea74db0fa5175",
+        "rev": "988623634e73e1f12d24d095f39c91dc65ec9840",
         "type": "github"
       },
       "original": {
-        "owner": "caelestia-dots",
+        "owner": "Rodrigo-Matuz",
         "repo": "shell",
         "type": "github"
       }
