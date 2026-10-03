@@ -199,6 +199,28 @@ thumbnail but **does not change, regenerate, or reapply the current colour schem
 post-hook still runs. When a static scheme is selected, `caelestia wallpaper --print` reports that
 scheme's colours rather than a wallpaper-derived preview.
 
+## Record through a running OBS Studio
+
+The Caelestia utilities drawer uses OBS's built-in WebSocket v5 server to control the
+**existing** OBS session. In OBS, enable **Tools → WebSocket Server Settings → Enable
+WebSocket server** (default local port `4455`); keep password authentication enabled.
+The CLI reads the port/password from your own `~/.config/obs-studio/plugin_config/obs-websocket/config.json`
+without printing the password. `OBS_WEBSOCKET_PORT` and `OBS_WEBSOCKET_PASSWORD` override
+that file if needed. The server must be enabled in OBS; Caelestia will not start or kill OBS
+or silently launch another recorder when the server is unreachable.
+
+```sh
+caelestia record --obs --status    # JSON: active/paused state and elapsed seconds
+caelestia record --obs --start     # start unless already recording
+caelestia record --obs --pause     # pause/resume a running recording
+caelestia record --obs --stop      # stop and show the OBS output path
+```
+
+OBS controls the capture sources, audio, format and output location in its own scene/profile.
+The `--region`, `--sound` and `record.extraArgs` settings belong to the original
+`gpu-screen-recorder` backend; do not combine those flags with `--obs`. Running
+`caelestia record` **without** `--obs` preserves that legacy behavior.
+
 ## Configuring
 
 All configuration options are in `~/.config/caelestia/cli.json`.

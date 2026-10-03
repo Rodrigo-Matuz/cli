@@ -88,7 +88,12 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
     record_parser.set_defaults(cls=record.Command)
     record_parser.add_argument("-r", "--region", nargs="?", const="slurp", help="record a region")
     record_parser.add_argument("-s", "--sound", action="store_true", help="record audio")
-    record_parser.add_argument("-p", "--pause", action="store_true", help="pause/resume the recording")
+    record_parser.add_argument("--obs", action="store_true", help="control a running OBS Studio via WebSocket")
+    record_action = record_parser.add_mutually_exclusive_group()
+    record_action.add_argument("-p", "--pause", action="store_true", help="pause/resume the recording")
+    record_action.add_argument("--status", action="store_true", help="print OBS recording status as JSON")
+    record_action.add_argument("--start", action="store_true", help="start recording in OBS if not already active")
+    record_action.add_argument("--stop", action="store_true", help="stop recording in OBS if active")
     record_parser.add_argument("-c", "--clipboard", action="store_true", help="copy recording path to clipboard")
 
     # Create parser for clipboard opts

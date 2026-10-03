@@ -33,6 +33,7 @@ python3.pkgs.buildPythonApplication {
 
   dependencies = with python3.pkgs; [
     materialyoucolor
+    obsws-python
     pillow
   ];
 

@@ -106,8 +106,13 @@ complete -c caelestia -n "$seen screenshot" -s 'r' -l 'region' -d 'Capture regio
 complete -c caelestia -n "$seen screenshot" -s 'f' -l 'freeze' -d 'Freeze while selecting region'
 
 # Record
-complete -c caelestia -n "$seen record" -s 'r' -l 'region' -d 'Capture region'
-complete -c caelestia -n "$seen record" -s 's' -l 'sound' -d 'Capture sound'
+complete -c caelestia -n "$seen record" -s 'r' -l 'region' -d 'Capture region (gpu-screen-recorder only)'
+complete -c caelestia -n "$seen record" -s 's' -l 'sound' -d 'Capture sound (gpu-screen-recorder only)'
+complete -c caelestia -n "$seen record" -s 'p' -l 'pause' -d 'Pause/resume recording'
+complete -c caelestia -n "$seen record" -l 'obs' -d 'Control running OBS Studio'
+complete -c caelestia -n "$seen record" -l 'status' -d 'OBS status as JSON'
+complete -c caelestia -n "$seen record" -l 'start' -d 'Start recording in OBS'
+complete -c caelestia -n "$seen record" -l 'stop' -d 'Stop recording in OBS'
 complete -c caelestia -n "$seen record" -s 'c' -l 'clipboard' -d 'Copy recording path to clipboard'
 
 # Clipboard
