@@ -88,11 +88,18 @@ class LiveWallpaperTest(unittest.TestCase):
             self.assertEqual(after, before)
 
     def test_all_video_extensions_are_accepted_case_insensitively(self):
-        for name in ("clip.MP4", "clip.MkV", "clip.WEBM"):
+        for name in ("clip.MP4", "clip.MkV", "clip.WEBM", "clip.MoV", "clip.AVI"):
             with self.subTest(name=name):
                 video = self.video(name)
                 wallpaper.set_wallpaper(video, False)
                 self.assertEqual((self.state / "path.txt").read_text(), str(video))
+
+    def test_common_video_containers_are_recognized_for_discovery(self):
+        for suffix in (".mov", ".m4v", ".avi", ".flv", ".ts", ".mts", ".m2ts", ".ogv"):
+            with self.subTest(suffix=suffix):
+                path = self.root / f"clip{suffix.upper()}"
+                path.touch()
+                self.assertTrue(wallpaper.is_video(path))
 
     def test_file_option_still_selects_wallpaper(self):
         video = self.video()

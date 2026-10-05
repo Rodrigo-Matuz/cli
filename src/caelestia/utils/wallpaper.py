@@ -34,7 +34,9 @@ def is_valid_image(path: Path) -> bool:
 
 
 def is_video(path: Path) -> bool:
-    return path.is_file() and path.suffix.lower() in {".mp4", ".mkv", ".webm"}
+    return path.is_file() and path.suffix.lower() in {
+        ".mp4", ".mkv", ".webm", ".mov", ".m4v", ".avi", ".flv", ".ts", ".mts", ".m2ts", ".ogv"
+    }
 
 
 def video_size(wall: Path) -> tuple[int, int] | None:
