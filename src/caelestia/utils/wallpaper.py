@@ -1,7 +1,9 @@
+import hashlib
 import json
 import os
 import random
 import subprocess
+import tempfile
 from argparse import Namespace
 from pathlib import Path
 from typing import cast
@@ -16,10 +18,12 @@ from caelestia.utils.material import get_colours_for_image
 from caelestia.utils.paths import (
     compute_hash,
     get_config,
+    live_wallpapers_dir,
     wallpaper_link_path,
     wallpaper_path_path,
     wallpaper_thumbnail_path,
     wallpapers_cache_dir,
+    wallpapers_dir,
 )
 from caelestia.utils.scheme import Scheme, get_scheme
 
@@ -29,10 +33,69 @@ def is_valid_image(path: Path) -> bool:
     return path.is_file() and path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp", ".tif", ".tiff", ".gif"]
 
 
-def check_wall(wall: Path, filter_size: tuple[int, int], threshold: float) -> bool:
-    with Image.open(wall) as img:
-        width, height = img.size
-        return width >= filter_size[0] * threshold and height >= filter_size[1] * threshold
+def is_video(path: Path) -> bool:
+    return path.is_file() and path.suffix.lower() in {".mp4", ".mkv", ".webm"}
+
+
+def video_size(wall: Path) -> tuple[int, int] | None:
+    try:
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+             "stream=width,height", "-of", "json", str(wall)],
+            capture_output=True, timeout=15, check=False,
+        )
+        if result.returncode:
+            return None
+        stream = json.loads(result.stdout)["streams"][0]
+        width, height = int(stream["width"]), int(stream["height"])
+        return (width, height) if width > 0 and height > 0 else None
+    except (FileNotFoundError, subprocess.TimeoutExpired, ValueError, KeyError, IndexError, TypeError):
+        return None
+
+
+def cache_for_wall(wall: Path) -> Path:
+    if is_video(wall):
+        stat = wall.stat()
+        identity = f"{wall.resolve()}\0{stat.st_size}\0{stat.st_mtime_ns}".encode()
+        return wallpapers_cache_dir / hashlib.sha256(identity).hexdigest()
+    return wallpapers_cache_dir / compute_hash(wall)
+
+
+def video_thumbnail(wall: Path, cache: Path) -> Path:
+    thumb = cache / "thumbnail.jpg"
+    if thumb.exists():
+        return thumb
+
+    cache.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(suffix=".jpg", dir=cache, delete=False) as output:
+        temporary = Path(output.name)
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-i", str(wall),
+             "-frames:v", "1", "-vf", "scale=128:128:force_original_aspect_ratio=decrease",
+             "-q:v", "2", "-y", str(temporary)],
+            capture_output=True, timeout=30, check=False,
+        )
+        if result.returncode or not temporary.stat().st_size:
+            raise ValueError(f'"{wall}" is not a decodable video: {result.stderr.decode(errors="replace").strip()}')
+        os.replace(temporary, thumb)
+    except (FileNotFoundError, subprocess.TimeoutExpired) as error:
+        raise ValueError(f'Cannot generate a thumbnail for "{wall}": {error}') from error
+    finally:
+        temporary.unlink(missing_ok=True)
+    return thumb
+
+
+def check_wall(wall: Path, filter_size: tuple[int, int], threshold: float, video_dimensions: tuple[int, int] | None = None) -> bool:
+    if is_video(wall):
+        size = video_dimensions if video_dimensions is not None else video_size(wall)
+        if size is None:
+            return False
+        width, height = size
+    else:
+        with Image.open(wall) as img:
+            width, height = img.size
+    return width >= filter_size[0] * threshold and height >= filter_size[1] * threshold
 
 
 def get_wallpaper() -> str | None:
@@ -44,10 +107,21 @@ def get_wallpaper() -> str | None:
 
 def get_wallpapers(args: Namespace) -> list[Path]:
     directory = Path(args.random)
-    if not directory.is_dir():
-        return []
 
-    walls = [f for f in directory.rglob("*") if is_valid_image(f)]
+    directories = [directory]
+    if directory == wallpapers_dir and live_wallpapers_dir != directory:
+        directories.append(live_wallpapers_dir)
+    dimensions: dict[Path, tuple[int, int]] = {}
+    walls = []
+    for folder in directories:
+        if not folder.is_dir():
+            continue
+        for f in folder.rglob("*"):
+            if is_valid_image(f):
+                walls.append(f)
+            elif is_video(f) and (size := video_size(f)) is not None:
+                dimensions[f] = size
+                walls.append(f)
 
     if args.no_filter:
         return walls
@@ -55,10 +129,12 @@ def get_wallpapers(args: Namespace) -> list[Path]:
     monitors = cast(list[dict[str, int]], message("monitors"))
     filter_size = min(m["width"] for m in monitors), min(m["height"] for m in monitors)
 
-    return [f for f in walls if check_wall(f, filter_size, args.threshold)]
+    return [f for f in walls if check_wall(f, filter_size, args.threshold, dimensions.get(f))]
 
 
 def get_thumb(wall: Path, cache: Path) -> Path:
+    if is_video(wall):
+        return video_thumbnail(wall, cache)
     thumb = cache / "thumbnail.jpg"
 
     if not thumb.exists():
@@ -69,6 +145,13 @@ def get_thumb(wall: Path, cache: Path) -> Path:
             img.save(thumb, "JPEG")
 
     return thumb
+
+
+def thumbnail_for_wall(wall: Path | str) -> Path:
+    wall = Path(wall).resolve()
+    if not (is_valid_image(wall) or is_video(wall)):
+        raise ValueError(f'"{wall}" is not a valid image or video')
+    return get_thumb(wall, cache_for_wall(wall))
 
 
 def get_smart_opts(wall: Path, cache: Path) -> dict:
@@ -110,10 +193,12 @@ def get_colours_for_wall(wall: Path | str, no_smart: bool) -> dict:
             "colours": scheme.colours,
         }
 
-    cache = wallpapers_cache_dir / compute_hash(wall)
+    cache = cache_for_wall(wall)
 
     if wall.suffix.lower() == ".gif":
         wall = convert_gif(wall)
+    elif is_video(wall):
+        wall = get_thumb(wall, cache)
 
     name = "dynamic"
 
@@ -156,30 +241,38 @@ def convert_gif(wall: Path) -> Path:
     return output_path
 
 
+def replace_link(link: Path, target: Path) -> None:
+    link.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=link.parent, delete=False) as temporary:
+        tmp = Path(temporary.name)
+    tmp.unlink()
+    try:
+        tmp.symlink_to(target)
+        os.replace(tmp, link)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+
 def set_wallpaper(wall: Path, no_smart: bool) -> None:
     # Make path absolute
     wall = Path(wall).resolve()
 
-    if not is_valid_image(wall):
-        raise ValueError(f'"{wall}" is not a valid image')
+    if not (is_valid_image(wall) or is_video(wall)):
+        raise ValueError(f'"{wall}" is not a valid image or video')
 
     # Use gif's 1st frame for thumb only
     wall_cache = convert_gif(wall) if wall.suffix.lower() == ".gif" else wall
 
-    # Update files
+    # Decode before changing the selected wallpaper. Failed inputs leave
+    # path.txt and the two current symlinks untouched.
+    cache = cache_for_wall(wall if is_video(wall) else wall_cache)
+    thumb = get_thumb(wall_cache, cache)
+
+    # Update links without ever exposing a missing thumbnail to the shell.
+    replace_link(wallpaper_link_path, wall)
+    replace_link(wallpaper_thumbnail_path, thumb)
     wallpaper_path_path.parent.mkdir(parents=True, exist_ok=True)
     wallpaper_path_path.write_text(str(wall))
-    wallpaper_link_path.parent.mkdir(parents=True, exist_ok=True)
-    wallpaper_link_path.unlink(missing_ok=True)
-    wallpaper_link_path.symlink_to(wall)
-
-    cache = wallpapers_cache_dir / compute_hash(wall_cache)
-
-    # Generate thumbnail or get from cache
-    thumb = get_thumb(wall_cache, cache)
-    wallpaper_thumbnail_path.parent.mkdir(parents=True, exist_ok=True)
-    wallpaper_thumbnail_path.unlink(missing_ok=True)
-    wallpaper_thumbnail_path.symlink_to(thumb)
 
     scheme = get_scheme()
 

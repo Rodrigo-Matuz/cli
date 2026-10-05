@@ -117,10 +117,13 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
         "-r", "--random", nargs="?", const=wallpapers_dir, metavar="DIR", help="switch to a random wallpaper"
     )
     wallpaper_parser.add_argument("-f", "--file", help="the path to the wallpaper to switch to")
+    wallpaper_parser.add_argument("--thumbnail", metavar="PATH", help="print a cached JPEG thumbnail for a wallpaper")
+    wallpaper_parser.add_argument("--thumbnail-info", metavar="PATH", help="print a source-tagged thumbnail as JSON")
     wallpaper_parser.add_argument("-n", "--no-filter", action="store_true", help="do not filter by size")
     wallpaper_parser.add_argument(
         "-t",
         "--threshold",
+        type=float,
         default=0.8,
         help="the minimum percentage of the largest monitor size the image must be greater than to be selected",
     )
@@ -130,6 +133,13 @@ def parse_args() -> tuple[argparse.ArgumentParser, argparse.Namespace]:
         action="store_true",
         help="do not automatically change the scheme mode based on wallpaper colour",
     )
+
+    # Short form used by shell integrations; share the same selection command.
+    alias_parser = command_parser.add_parser("set", help="set a property")
+    alias_commands = alias_parser.add_subparsers(title="subcommands", required=True)
+    alias_wallpaper = alias_commands.add_parser("wallpaper", help="set the wallpaper")
+    alias_wallpaper.add_argument("file", help="image or video path")
+    alias_wallpaper.set_defaults(cls=wallpaper.Command, print=None, random=None, thumbnail=None, thumbnail_info=None, no_smart=False)
 
     # Create parser for resizer opts
     resizer_parser = command_parser.add_parser("resizer", help="window resizer daemon")

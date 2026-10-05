@@ -23,6 +23,20 @@ The original CLI functionality is retained, with these personal additions and ch
 - Added OBS status, start, stop, and pause/resume commands, returned-output-path reporting, bounded connection handling, credential-safe logging, and Fish completions.
 - Kept `gpu-screen-recorder` as the default legacy recorder. OBS is used only with the explicit `--obs` option.
 - Added regression tests and documentation for the OBS backend and its shell integration.
+- Added MP4/MKV/WebM wallpaper selection, on-demand JPEG thumbnails, and video-aware random selection.
+
+## Live wallpapers
+
+```sh
+caelestia wallpaper -f /path/to/video.mp4
+caelestia set wallpaper /path/to/video.mkv
+caelestia wallpaper --thumbnail /path/to/video.webm
+caelestia wallpaper -p /path/to/video.mp4
+```
+
+`--thumbnail` prints an absolute path to a cached JPEG for a video **or image** without selecting it; the shell can display that path in its picker. The selected source remains the original video in `~/.local/state/caelestia/wallpaper/path.txt` and `current`, while `thumbnail.jpg` points at its first-frame JPEG. Dynamic colour previews use the first frame; selecting a wallpaper does not change the active colour scheme. Random wallpaper selection includes valid videos from `~/Pictures/Live-Wallpapers` (override with `CAELESTIA_LIVE_WALLPAPERS_DIR`) alongside `~/Pictures/Wallpapers`; an explicit `-r DIR` searches only that directory. It filters video dimensions with `ffprobe` unless `--no-filter` is used. Videos are decoded with `ffmpeg` before selection, so missing or undecodable videos do not replace the current selection. This fork's Nix package includes ffmpeg; non-Nix installs need `ffmpeg` and `ffprobe` on `PATH`.
+
+The live-wallpaper integration concept is credited to [SunnydeuS/Caelestia-Live-Wallpapers-Integration](https://github.com/SunnydeuS/Caelestia-Live-Wallpapers-Integration). This fork's CLI implementation is original and does not copy code from that repository.
 
 ## OBS commands
 

@@ -1,7 +1,7 @@
 set -l seen '__fish_seen_subcommand_from'
 set -l has_opt '__fish_contains_opt'
 
-set -l commands shell toggle scheme screenshot record clipboard emoji wallpaper resizer install update
+set -l commands shell toggle scheme screenshot record clipboard emoji wallpaper set resizer install update
 set -l not_seen "not $seen $commands"
 
 # Disable file completions
@@ -19,6 +19,7 @@ complete -c caelestia -n $not_seen -a 'record' -d 'Start a screen recording'
 complete -c caelestia -n $not_seen -a 'clipboard' -d 'Open clipboard history'
 complete -c caelestia -n $not_seen -a 'emoji' -d 'Emoji/glyph utilities'
 complete -c caelestia -n $not_seen -a 'wallpaper' -d 'Manage the wallpaper'
+complete -c caelestia -n $not_seen -a 'set' -d 'Set a property'
 complete -c caelestia -n $not_seen -a 'resizer' -d 'Window resizer'
 complete -c caelestia -n $not_seen -a 'install' -d 'Install the Caelestia dotfiles'
 complete -c caelestia -n $not_seen -a 'update' -d 'Update the Caelestia dotfiles'
@@ -122,9 +123,12 @@ complete -c caelestia -n "$seen clipboard" -s 'd' -l 'delete' -d 'Delete from cl
 complete -c caelestia -n "$seen wallpaper" -s 'p' -l 'print' -d 'Print the scheme for a wallpaper' -rF
 complete -c caelestia -n "$seen wallpaper" -s 'r' -l 'random' -d 'Switch to a random wallpaper' -rF
 complete -c caelestia -n "$seen wallpaper" -s 'f' -l 'file' -d 'The file to switch to' -rF
+complete -c caelestia -n "$seen wallpaper" -l 'thumbnail' -d 'Print a JPEG thumbnail path' -rF
 complete -c caelestia -n "$seen wallpaper" -s 'n' -l 'no-filter' -d 'Do not filter by size'
 complete -c caelestia -n "$seen wallpaper" -s 't' -l 'threshold' -d 'The threshold to filter by' -r
 complete -c caelestia -n "$seen wallpaper" -s 'N' -l 'no-smart' -d 'Disable smart mode switching'
+complete -c caelestia -n "$seen set && not $seen wallpaper" -a 'wallpaper' -d 'Set the wallpaper'
+complete -c caelestia -n "$seen set && $seen wallpaper" -F
 
 # Emoji
 complete -c caelestia -n "$seen emoji" -s 'p' -l 'picker' -d 'Open emoji/glyph picker'

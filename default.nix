@@ -12,6 +12,7 @@
   dart-sass,
   grim,
   fuzzel,
+  ffmpeg-headless,
   gpu-screen-recorder,
   dconf,
   killall,
@@ -51,6 +52,7 @@ python3.pkgs.buildPythonApplication {
       dart-sass
       grim
       fuzzel
+      ffmpeg-headless
       gpu-screen-recorder
       dconf
       killall
