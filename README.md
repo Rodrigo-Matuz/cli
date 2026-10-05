@@ -38,6 +38,10 @@ caelestia wallpaper -p /path/to/video.mp4
 
 The live-wallpaper integration concept is credited to [SunnydeuS/Caelestia-Live-Wallpapers-Integration](https://github.com/SunnydeuS/Caelestia-Live-Wallpapers-Integration). This fork's CLI implementation is original and does not copy code from that repository.
 
+## Notes dashboard tab
+
+The companion [shell fork](https://github.com/Rodrigo-Matuz/shell) vendors the original [Denzils-repo Caelestia Notes plugin](https://denzils-repo.github.io/Caelestia_Notes/) as a dashboard tab. Notes and to-dos are handled entirely by the shell plugin and stored locally; no CLI command or CLI dependency is needed. See the shell README for Nix setup and the [plugin's upstream guide](https://github.com/Denzils-repo/Caelestia_Notes) for usage.
+
 ## OBS commands
 
 The OBS backend controls an existing authenticated OBS session. It does not launch or terminate OBS and does not store credentials in this repository.
