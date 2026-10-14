@@ -1,50 +1,140 @@
 # Caelestia CLI — Matuz personal fork
 
-This repository is a personal fork of the original Caelestia CLI project.
+This repository is Rodrigo Matuz's personal fork of the [Caelestia CLI](https://github.com/caelestia-dots/cli), the command-line control layer for the Caelestia desktop.
 
-It is not a public project. It exists for Rodrigo Matuz's personal setup and for a small number of friends. No public support, compatibility guarantee, issue triage, release schedule, or general-purpose documentation is provided here.
+It is not a general-purpose distribution. The fork follows one workstation's setup, keeps personal defaults, and may diverge from upstream without compatibility guarantees, public support, issue triage, or a release schedule.
 
-For normal Caelestia CLI installation, configuration, dependency, usage, or troubleshooting questions, refer to the original project and its documentation. This fork may diverge from upstream at any time.
+## Relationship with the shell fork
 
-## Fork changes
+The CLI and the companion [Caelestia Shell fork](https://github.com/Rodrigo-Matuz/shell) are developed and packaged together:
+
+- The CLI owns commands for wallpapers, color schemes, screenshots, recording, shell IPC, installation, and updates.
+- The shell owns the Quickshell UI, dashboard, lock screen, notifications, media views, and services.
+- The shell's Home Manager package uses the matching CLI through its `with-cli` package output.
+- The shell's optional `CaelestiaVoice` integration adds a Vesktop/Vencord voice-call view to the dashboard; the CLI does not install Vesktop or the voice plugin.
+
+Use the [shell README](https://github.com/Rodrigo-Matuz/shell/blob/main/README.md) for shell installation and the opt-in Vesktop module. Use this README for CLI commands and CLI-specific configuration.
+
+## What this fork adds
 
 The original CLI functionality is retained, with these personal additions and changes:
 
-- Added the fixed `matuz/default/dark` palette with these accents:
+- A fixed `matuz/default/dark` palette:
   - red `#FC1A70`
   - purple `#702EF3`
   - blue `#1E65FF`
   - orange `#FF4D00`
   - yellow `#FFFF87`
   - green `#A4E400`
-- Decoupled wallpaper changes from automatic regeneration or reapplication of the active color scheme.
-- Paired the CLI's Nix integration with the personal shell fork.
-- Added an explicit authenticated OBS WebSocket v5 recording backend for an already-running OBS Studio instance.
-- Added OBS status, start, stop, and pause/resume commands, returned-output-path reporting, bounded connection handling, credential-safe logging, and Fish completions.
-- Kept `gpu-screen-recorder` as the default legacy recorder. OBS is used only with the explicit `--obs` option.
-- Added regression tests and documentation for the OBS backend and its shell integration.
-- Added MP4/MKV/WebM wallpaper selection, on-demand JPEG thumbnails, and video-aware random selection.
+- Wallpaper changes no longer regenerate or reapply the active color scheme automatically.
+- Nix packaging is paired with the Matuz shell fork.
+- An authenticated OBS WebSocket v5 backend for an already-running OBS Studio instance.
+- OBS status, start, stop, pause/resume, returned-output-path reporting, bounded connection handling, credential-safe logging, and Fish completions.
+- MP4, MKV, and WebM wallpaper selection with on-demand JPEG thumbnails and video-aware random selection.
 
-## Live wallpapers
+## Install with Nix
+
+The flake exports these packages:
+
+- `packages.default` / `packages.caelestia-cli`: the CLI without the shell bundled as a runtime dependency.
+- `packages.with-shell`: the CLI paired with the matching Caelestia Shell package.
+
+Run the CLI directly without installing it:
 
 ```sh
-caelestia wallpaper -f /path/to/video.mp4
-caelestia set wallpaper /path/to/video.mkv
-caelestia wallpaper --thumbnail /path/to/video.webm
-caelestia wallpaper -p /path/to/video.mp4
+nix run github:Rodrigo-Matuz/cli -- --help
 ```
 
-`--thumbnail` prints an absolute path to a cached JPEG for a video **or image** without selecting it; the shell can display that path in its picker. The selected source remains the original video in `~/.local/state/caelestia/wallpaper/path.txt` and `current`, while `thumbnail.jpg` points at its first-frame JPEG. Dynamic colour previews use the first frame; selecting a wallpaper does not change the active colour scheme. Random wallpaper selection includes valid videos from `~/Pictures/Live-Wallpapers` (override with `CAELESTIA_LIVE_WALLPAPERS_DIR`) alongside `~/Pictures/Wallpapers`; an explicit `-r DIR` searches only that directory. It filters video dimensions with `ffprobe` unless `--no-filter` is used. Videos are decoded with `ffmpeg` before selection, so missing or undecodable videos do not replace the current selection. This fork's Nix package includes ffmpeg; non-Nix installs need `ffmpeg` and `ffprobe` on `PATH`.
+To add it to a Home Manager profile, expose the input in the consumer flake and add the package for the current system:
 
-The live-wallpaper integration concept is credited to [SunnydeuS/Caelestia-Live-Wallpapers-Integration](https://github.com/SunnydeuS/Caelestia-Live-Wallpapers-Integration). This fork's CLI implementation is original and does not copy code from that repository.
+```nix
+inputs.caelestia-cli = {
+  url = "github:Rodrigo-Matuz/cli";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+```
 
-## Notes dashboard tab
+```nix
+home.packages = [
+  inputs.caelestia-cli.packages.${pkgs.system}.default
+];
+```
 
-The companion [shell fork](https://github.com/Rodrigo-Matuz/shell) vendors the original [Denzils-repo Caelestia Notes plugin](https://denzils-repo.github.io/Caelestia_Notes/) as a dashboard tab. Notes and to-dos are handled entirely by the shell plugin and stored locally; no CLI command or CLI dependency is needed. See the shell README for Nix setup and the [plugin's upstream guide](https://github.com/Denzils-repo/Caelestia_Notes) for usage.
+When the shell is installed through `inputs.caelestia-shell.homeManagerModules.default`, use that module's package instead of adding another standalone CLI package. Its default shell package is the paired `with-cli` build. Adding the standalone package as well is unnecessary and can create duplicate files in a Home Manager profile.
 
-## OBS commands
+Validate a consumer configuration before switching it:
 
-The OBS backend controls an existing authenticated OBS session. It does not launch or terminate OBS and does not store credentials in this repository.
+```sh
+nix flake check --no-write-lock-file
+nix build .#default --no-link --no-write-lock-file
+```
+
+## Command reference
+
+The executable is `caelestia`. Use `caelestia COMMAND --help` for the options available in the installed revision.
+
+### Shell control
+
+```sh
+caelestia shell                 # start the shell
+caelestia shell --daemon        # start it detached
+caelestia shell --restart       # restart running instances
+caelestia shell --kill          # stop running instances
+caelestia shell --log           # print the shell log
+caelestia shell --show          # print shell IPC commands
+```
+
+Pass an IPC command after `caelestia shell` to send it to the running shell. Use `caelestia shell --show` to list the commands supported by the installed shell revision.
+
+### Color schemes
+
+```sh
+caelestia scheme list
+caelestia scheme list --names
+caelestia scheme get --name
+caelestia scheme set --name matuz --flavour default --mode dark
+caelestia scheme set --random
+```
+
+The `matuz/default/dark` scheme is part of this fork. Wallpaper selection can calculate preview colors, but it does not change the active scheme automatically.
+
+### Wallpapers
+
+```sh
+caelestia wallpaper                  # print the selected wallpaper
+caelestia wallpaper --file /path/to/image.png
+caelestia wallpaper --file /path/to/video.mp4
+caelestia set wallpaper /path/to/video.mkv
+caelestia wallpaper --random
+caelestia wallpaper --thumbnail /path/to/video.webm
+caelestia wallpaper --thumbnail-info /path/to/video.webm
+caelestia wallpaper --print /path/to/video.mp4
+```
+
+`--thumbnail` prints an absolute path to a cached JPEG for an image or video without selecting it. `--thumbnail-info` prints the source and cached thumbnail as JSON. The selected source remains the original file in `~/.local/state/caelestia/wallpaper/`; the thumbnail is only a preview artifact.
+
+Random selection includes valid videos from `~/Pictures/Live-Wallpapers` alongside `~/Pictures/Wallpapers`. Set `CAELESTIA_LIVE_WALLPAPERS_DIR` to override the video directory, or pass an explicit directory with `wallpaper --random DIR`. Video dimensions are filtered against the monitor size unless `--no-filter` is used. The Nix package supplies ffmpeg; non-Nix installations need both `ffmpeg` and `ffprobe` on `PATH`.
+
+The live-wallpaper concept is credited to [SunnydeuS/Caelestia-Live-Wallpapers-Integration](https://github.com/SunnydeuS/Caelestia-Live-Wallpapers-Integration). This fork's CLI implementation is original and does not copy code from that repository.
+
+### Screenshots and recording
+
+```sh
+caelestia screenshot
+caelestia screenshot --region
+caelestia screenshot --region --freeze
+
+caelestia record                  # toggle the legacy gpu-screen-recorder
+caelestia record --region
+caelestia record --sound
+caelestia record --pause
+```
+
+The normal recorder uses `gpu-screen-recorder` and stores finished recordings in the configured recordings directory. The CLI does not launch the shell or OBS automatically for the legacy path.
+
+### OBS recording
+
+The explicit OBS backend controls an existing authenticated OBS Studio session. It does not launch or terminate OBS:
 
 ```sh
 caelestia record --obs --status
@@ -53,10 +143,48 @@ caelestia record --obs --pause
 caelestia record --obs --stop
 ```
 
-The normal `caelestia record` command continues to use the legacy `gpu-screen-recorder` backend.
+Enable the OBS WebSocket server in **OBS → Tools → WebSocket Server Settings**. The CLI reads the localhost port and password from OBS's configuration file, or from these environment variables when set:
+
+```sh
+export OBS_WEBSOCKET_PORT=4455
+export OBS_WEBSOCKET_PASSWORD='your-password'
+```
+
+The `--obs` backend uses OBS's configured scene and audio sources. Do not combine it with `--region` or `--sound`; those options belong to `gpu-screen-recorder`. The CLI suppresses the OBS client logger so the password is not written to normal command output.
+
+### Other commands
+
+```sh
+caelestia clipboard
+caelestia clipboard --delete
+caelestia emoji --picker
+caelestia emoji --fetch
+caelestia resizer --daemon
+caelestia toggle <workspace>
+caelestia install
+caelestia update
+```
+
+The installer and updater operate on the broader Caelestia dotfiles setup and may prompt for components or an AUR helper. Read their `--help` output before using them on a machine that is not the target workstation.
+
+## Notes and Vesktop
+
+Notes are a shell feature, not a CLI feature. The shell fork vendors the Notes dashboard plugin and stores its data locally; no CLI command or CLI dependency is needed. See the [shell README's Notes section](https://github.com/Rodrigo-Matuz/shell/blob/main/README.md#notes-setup).
+
+Similarly, the shell's `CaelestiaVoice` plugin is packaged through the shell flake's opt-in `homeManagerModules.vesktop-voice` output. The CLI does not install Vesktop, write Vencord settings, or provide the voice socket. Enable that module only from the [shell README's Vesktop instructions](https://github.com/Rodrigo-Matuz/shell/blob/main/README.md#caelestiavoice-for-vesktop).
+
+## Development and verification
+
+The Python package is under `src/caelestia/`. Focused tests cover the fixed palette, wallpapers, and OBS backend:
+
+```sh
+python3 -m unittest discover -s tests -p 'test_*.py'
+nix flake check --no-write-lock-file
+nix build .#default --no-link --no-write-lock-file
+```
 
 ## Original project
 
-For authoritative installation instructions, configuration reference, dependencies, general CLI usage, support, and upstream history, use the original project:
+For authoritative upstream installation instructions, dependencies, general CLI usage, support, and upstream history, see:
 
 https://github.com/caelestia-dots/cli
